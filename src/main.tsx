@@ -1,5 +1,5 @@
 import { render } from 'preact'
-import '@fontsource-variable/manrope'
+import '@fontsource-variable/inter'
 import './index.css'
 import { App } from './app.tsx'
 import { AppProvider } from './contexts/AppContext.tsx'

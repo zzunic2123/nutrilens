@@ -95,7 +95,7 @@ export function SettingsPage() {
 
           <section class="settings-section card">
             <div class="settings-section-heading">
-              <span class="settings-icon settings-icon--lime"><Cloud size={19} /></span>
+              <span class="settings-icon settings-icon--blue"><Cloud size={19} /></span>
               <div><h2>Daily nutrition targets</h2><p>Used for progress and deterministic guidance.</p></div>
             </div>
             <div class="goal-fields">

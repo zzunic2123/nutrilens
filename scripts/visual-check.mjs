@@ -28,12 +28,18 @@ try {
   await page.keyboard.press('Escape')
   await page.waitForSelector('.modal-layer', { hidden: true })
 
+  await page.goto(`${baseUrl}#insights`, { waitUntil: 'networkidle0' })
+  await new Promise((resolve) => setTimeout(resolve, 450))
+  await page.screenshot({ path: '/tmp/nutrilens-visual-insights.png', fullPage: true })
+
   await page.goto(`${baseUrl}#settings`, { waitUntil: 'networkidle0' })
+  await new Promise((resolve) => setTimeout(resolve, 450))
   const lightTheme = await page.evaluate(() => ({
     selected: document.documentElement.dataset.theme,
     bodyColor: getComputedStyle(document.body).color,
     bodyBackground: getComputedStyle(document.body).backgroundColor,
   }))
+  await page.screenshot({ path: '/tmp/nutrilens-visual-settings.png', fullPage: true })
   await page.click('.theme-picker button:nth-child(2)')
   await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark')
   await new Promise((resolve) => setTimeout(resolve, 450))

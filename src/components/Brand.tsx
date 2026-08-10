@@ -12,15 +12,12 @@ export function AppMark({ size = 40 }: { size?: number }) {
     >
       <rect width="48" height="48" rx="15" fill="currentColor" />
       <path
-        d="M15 25.8c0-7.2 5.3-12.9 13.1-13.8.8 7.9-3.8 13.8-13.1 13.8Z"
-        fill="var(--brand-accent)"
+        d="M24 13a11 11 0 1 1-9.5 5.5"
+        stroke="#fff"
+        stroke-width="4.2"
+        stroke-linecap="round"
       />
-      <path
-        d="M17.2 34.8c-.4-7.5 4.2-13.3 14.3-15.2.7 7.7-4 14.2-14.3 15.2Z"
-        fill="#fff"
-        fill-opacity=".96"
-      />
-      <path d="M16.5 35c2.1-6.2 6.1-11.2 12.3-15" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <circle cx="14.5" cy="18.5" r="3" fill="var(--brand-accent)" />
     </svg>
   )
 }
