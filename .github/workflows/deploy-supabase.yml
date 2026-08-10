@@ -27,7 +27,7 @@ jobs:
             echo "ready=false" >> "$GITHUB_OUTPUT"
             echo "::notice::Supabase deployment skipped until repository secrets are configured."
           fi
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: steps.config.outputs.ready == 'true'
       - uses: supabase/setup-cli@v1
         if: steps.config.outputs.ready == 'true'
