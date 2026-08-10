@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>NutriLens privacy notice</title>
+    <style>
+      :root {
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        color: #172033;
+        background: #f7f8fa;
+      }
+      body {
+        margin: 0;
+      }
+      main {
+        width: min(680px, calc(100% - 40px));
+        margin: 0 auto;
+        padding: 64px 0 80px;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: clamp(2rem, 7vw, 3.25rem);
+        letter-spacing: -0.045em;
+      }
+      h2 {
+        margin: 36px 0 10px;
+        font-size: 1.15rem;
+      }
+      p,
+      li {
+        color: #526079;
+        line-height: 1.7;
+      }
+      ul {
+        padding-left: 22px;
+      }
+      .updated {
+        margin: 0 0 32px;
+        font-size: 0.9rem;
+      }
+      .notice {
+        margin-top: 36px;
+        padding: 18px 20px;
+        border: 1px solid #dbe2ee;
+        border-radius: 16px;
+        background: #fff;
+      }
+      a {
+        color: #2563eb;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          color: #f4f7fb;
+          background: #101624;
+        }
+        p,
+        li {
+          color: #b8c3d7;
+        }
+        .notice {
+          border-color: #2e3950;
+          background: #182033;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>NutriLens privacy notice</h1>
+      <p class="updated">Last updated: 10 August 2026</p>
+
+      <p>
+        NutriLens is a small, invite-only nutrition journal. This notice
+        explains the data used to provide the app.
+      </p>
+
+      <h2>Information the app uses</h2>
+      <ul>
+        <li>
+          Your Google account email and display name for sign-in and access
+          control.
+        </li>
+        <li>
+          Your nutrition targets, timezone, meals, notes, and estimated
+          nutrition values.
+        </li>
+        <li>
+          Push-notification subscription details when you enable reminders.
+        </li>
+        <li>
+          Limited operational records for AI usage, reminder delivery,
+          reliability, and abuse prevention.
+        </li>
+      </ul>
+
+      <h2>Meal analysis</h2>
+      <p>
+        When you request an AI estimate, your meal description or a
+        browser-compressed meal photo is sent securely to OpenAI for analysis.
+        Meal photos are not saved in the NutriLens database. The resulting
+        aggregate nutrition estimate is saved only after you confirm the meal.
+      </p>
+
+      <h2>Storage and sharing</h2>
+      <p>
+        Account and meal data is stored in Supabase and protected so signed-in
+        users can access only their own records. Google provides sign-in, OpenAI
+        provides optional meal analysis, and browser push services deliver
+        reminders. NutriLens does not sell personal information or use it for
+        advertising.
+      </p>
+
+      <h2>Your choices</h2>
+      <p>
+        You can use the local demo without creating an account, disable
+        reminders, delete individual meals, or ask the app owner to remove your
+        account and associated data. Avoid entering information you do not want
+        processed by these services.
+      </p>
+
+      <div class="notice">
+        <strong>Health note.</strong> NutriLens provides estimates for personal
+        tracking, not medical advice. Nutrition estimates can be inaccurate.
+      </div>
+    </main>
+  </body>
+</html>

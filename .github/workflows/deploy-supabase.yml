@@ -5,7 +5,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'supabase/**'
+      - "supabase/**"
 
 permissions:
   contents: read
@@ -18,11 +18,26 @@ jobs:
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
       PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_ID }}
     steps:
+      - name: Check deployment configuration
+        id: config
+        run: |
+          if [ -n "$SUPABASE_ACCESS_TOKEN" ] && [ -n "$SUPABASE_DB_PASSWORD" ] && [ -n "$PROJECT_REF" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Supabase deployment skipped until repository secrets are configured."
+          fi
       - uses: actions/checkout@v4
+        if: steps.config.outputs.ready == 'true'
       - uses: supabase/setup-cli@v1
+        if: steps.config.outputs.ready == 'true'
         with:
           version: latest
       - run: supabase link --project-ref "$PROJECT_REF"
+        if: steps.config.outputs.ready == 'true'
       - run: supabase db push
+        if: steps.config.outputs.ready == 'true'
       - run: supabase functions deploy analyze-meal
+        if: steps.config.outputs.ready == 'true'
       - run: supabase functions deploy send-reminders --no-verify-jwt
+        if: steps.config.outputs.ready == 'true'
