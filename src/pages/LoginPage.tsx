@@ -42,6 +42,7 @@ export function LoginPage() {
       </section>
 
       <section class="login-panel">
+        <div class="login-panel-brand"><Brand /></div>
         <div class="login-card">
           <div class="login-card-heading">
             <span class="login-icon"><Sparkles size={22} /></span>

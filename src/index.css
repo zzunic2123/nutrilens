@@ -282,7 +282,8 @@ h1, h2, h3, strong { letter-spacing: -.025em; }
 .login-orbit--one::before { bottom: 58px; left: 26px; }
 .login-orbit--two { bottom: -300px; left: -180px; width: 620px; height: 620px; }
 .login-orbit--two::before { top: 85px; right: 45px; background: var(--purple); }
-.login-panel { display: grid; place-items: center; padding: 50px; background: var(--surface); }
+.login-panel { position: relative; display: grid; place-items: center; padding: 50px; background: var(--surface); }
+.login-panel-brand { display: none; }
 .login-card { width: min(100%, 430px); }
 .login-card-heading { margin-bottom: 30px; text-align: center; }
 .login-icon { width: 52px; height: 52px; display: grid; place-items: center; margin: 0 auto 18px; border-radius: 17px; background: var(--brand-soft); color: var(--brand); }
@@ -708,11 +709,11 @@ h1, h2, h3, strong { letter-spacing: -.025em; }
   .recommendation-grid { grid-template-columns: 1fr; }
   .settings-aside { display: grid; grid-template-columns: repeat(2,1fr); }
   .settings-actions, .privacy-note { grid-column: span 2; }
-  .login-page { grid-template-columns: 1fr; }
-  .login-story { min-height: 48vh; padding: 30px; }
-  .login-story-copy { width: 100%; padding: 70px 0 20px; }
-  .login-story-copy h1 { max-width: 720px; font-size: clamp(43px,9vw,70px); }
-  .login-panel { padding: 55px 25px; }
+  .login-page { min-height: 100dvh; display: block; background: var(--surface); }
+  .login-story { display: none; }
+  .login-panel { min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: calc(96px + env(safe-area-inset-top)) 25px calc(34px + env(safe-area-inset-bottom)); }
+  .login-panel-brand { position: absolute; top: calc(22px + env(safe-area-inset-top)); left: 25px; display: block; }
+  .login-panel-brand .brand-copy span { display: none; }
   .modal-card--wide { width: min(100%, 720px); }
   .review-layout { grid-template-columns: 1fr; }
   .review-aside { padding: 20px 0 0; border-top: 1px solid var(--line-soft); border-left: 0; }
@@ -759,15 +760,15 @@ h1, h2, h3, strong { letter-spacing: -.025em; }
   .goal-fields { grid-template-columns: repeat(2,1fr); }
   .reminder-list { grid-template-columns: 1fr; }
   .mobile-save { position: fixed; z-index: 49; right: 15px; bottom: calc(79px + env(safe-area-inset-bottom)); display: flex; box-shadow: var(--shadow-md); }
-  .login-story { min-height: 520px; padding: 24px 20px; }
-  .login-story-copy { padding-top: 58px; }
-  .login-story-copy h1 { font-size: 45px; }
-  .login-story-copy > p { font-size: 12px; }
-  .login-benefits { grid-template-columns: 1fr; }
-  .login-benefits > span { min-height: 76px; display: grid; grid-template-columns: 27px 1fr; grid-template-rows: auto auto; gap: 1px 8px; }
-  .login-benefits svg { grid-row: span 2; margin: 0; }
-  .login-benefits strong { margin: 0; }
-  .login-panel { padding: 42px 20px; }
+  .login-panel { padding: calc(88px + env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom)); }
+  .login-panel-brand { top: calc(17px + env(safe-area-inset-top)); left: 20px; }
+  .login-panel-brand .app-mark { width: 38px; height: 38px; }
+  .login-panel-brand .brand-copy strong { font-size: 17px; }
+  .login-card-heading { margin-bottom: 26px; }
+  .login-icon { display: none; }
+  .login-card-heading h2 { font-size: 25px; }
+  .login-card-heading p { max-width: 320px; margin-inline: auto; }
+  .login-card .button--google, .login-card > .button--secondary { min-height: 54px; }
   .modal-layer { align-items: flex-end; padding: 0; }
   .modal-card, .modal-card--wide { width: 100%; max-height: 94dvh; border-radius: 25px 25px 0 0; animation-name: sheet-in; }
   @keyframes sheet-in { from { opacity: .7; transform: translateY(35px); } to { opacity: 1; transform: none; } }
@@ -789,6 +790,14 @@ h1, h2, h3, strong { letter-spacing: -.025em; }
   .review-actions { position: sticky; bottom: 0; z-index: 2; margin: 14px -15px -16px; padding: 12px 15px calc(12px + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--surface) 95%, transparent); backdrop-filter: blur(12px); }
   .review-actions .button { flex: 1; padding-inline: 10px; }
   .toast-viewport { top: 10px; right: 10px; width: calc(100vw - 20px); }
+}
+
+@media (max-width: 900px) and (max-height: 620px) {
+  .login-panel { justify-content: flex-start; }
+  .login-card-heading { margin-bottom: 18px; }
+  .login-divider { margin-block: 16px; }
+  .login-trust { margin-top: 17px; }
+  .login-legal { margin-top: 11px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
