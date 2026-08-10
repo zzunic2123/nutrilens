@@ -109,7 +109,7 @@ export function TodayPage({ selectedDate, onSelectedDate, onAdd, onShowInsights 
             <p>Take a photo or describe it naturally. You always review the estimate before anything is saved.</p>
           </div>
           <div class="quick-log-actions">
-            <button onClick={() => onAdd('photo_ai')}><span><Camera size={21} /></span><div><strong>Snap a photo</strong><small>Best for a plated meal</small></div><ChevronRight size={18} /></button>
+            <button onClick={() => onAdd('photo_ai')}><span><Camera size={21} /></span><div><strong>Use a photo</strong><small>Take one or choose from gallery</small></div><ChevronRight size={18} /></button>
             <button onClick={() => onAdd('text_ai')}><span><Type size={21} /></span><div><strong>Describe your meal</strong><small>“Oats with banana…”</small></div><ChevronRight size={18} /></button>
           </div>
           <button class="manual-link" onClick={() => onAdd('manual')}><Plus size={15} /> Enter nutrition manually</button>

@@ -55,7 +55,8 @@ export function MealComposer({ open, initialMode, initialDateKey, onClose }: Mea
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [analysisMessage, setAnalysisMessage] = useState(0)
-  const fileInput = useRef<HTMLInputElement>(null)
+  const cameraInput = useRef<HTMLInputElement>(null)
+  const galleryInput = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (!open) return
@@ -101,6 +102,12 @@ export function MealComposer({ open, initialMode, initialDateKey, onClose }: Mea
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : 'Could not prepare that photo.')
     }
+  }
+
+  const openFilePicker = (input: HTMLInputElement | null) => {
+    if (!input) return
+    input.value = ''
+    input.click()
   }
 
   const runAnalysis = async () => {
@@ -181,7 +188,7 @@ export function MealComposer({ open, initialMode, initialDateKey, onClose }: Mea
       ? 'Reading your meal'
       : stage === 'review'
         ? analysis ? 'Review the estimate' : 'Add nutrition details'
-        : mode === 'photo_ai' ? 'Photograph your meal' : 'Describe your meal'
+        : mode === 'photo_ai' ? 'Add a meal photo' : 'Describe your meal'
 
   return (
     <Modal open={open} title={title} eyebrow={stage === 'review' ? 'Nothing saves until you confirm' : 'Log a meal'} onClose={onClose} wide={stage === 'review'}>
@@ -189,7 +196,7 @@ export function MealComposer({ open, initialMode, initialDateKey, onClose }: Mea
         <div class="composer-choice">
           <button class="choice-card choice-card--photo" onClick={() => selectMode('photo_ai')}>
             <span><Camera size={26} /></span>
-            <div><strong>Take a photo</strong><p>Fastest for a plate or bowl.</p></div>
+            <div><strong>Use a photo</strong><p>Take one now or choose from your gallery.</p></div>
             <ArrowRight size={19} />
           </button>
           <button class="choice-card choice-card--text" onClick={() => selectMode('text_ai')}>
@@ -236,26 +243,43 @@ export function MealComposer({ open, initialMode, initialDateKey, onClose }: Mea
         <div class="composer-input">
           <button class="back-link" onClick={() => setStage('choose')}><ArrowLeft size={16} /> Other options</button>
           <input
-            ref={fileInput}
+            ref={cameraInput}
             class="visually-hidden"
             type="file"
-            accept="image/jpeg,image/png,image/webp"
+            accept="image/*"
             capture="environment"
+            tabIndex={-1}
+            aria-hidden="true"
+            onChange={(event) => void handleFile(event.currentTarget.files?.[0])}
+          />
+          <input
+            ref={galleryInput}
+            class="visually-hidden"
+            type="file"
+            accept="image/*"
+            tabIndex={-1}
+            aria-hidden="true"
             onChange={(event) => void handleFile(event.currentTarget.files?.[0])}
           />
           {photo ? (
             <div class="photo-preview">
               <img src={photo} alt="Meal ready to analyse" />
-              <div><span><Check size={15} /> Ready to analyse</span><small>{photoName} · {Math.round(dataUrlSizeInBytes(photo) / 1024)} KB</small></div>
-              <button class="button button--small button--secondary" onClick={() => fileInput.current?.click()}>Change</button>
+              <div class="photo-preview-copy"><span><Check size={15} /> Ready to analyse</span><small>{photoName} · {Math.round(dataUrlSizeInBytes(photo) / 1024)} KB</small></div>
+              <div class="photo-preview-actions">
+                <button class="button button--small button--secondary" onClick={() => openFilePicker(cameraInput.current)}><Camera size={14} /> Retake</button>
+                <button class="button button--small button--secondary" onClick={() => openFilePicker(galleryInput.current)}><ImagePlus size={14} /> Replace</button>
+              </div>
             </div>
           ) : (
-            <button class="photo-dropzone" onClick={() => fileInput.current?.click()}>
+            <div class="photo-dropzone">
               <span class="photo-dropzone-icon"><ImagePlus size={29} /></span>
-              <strong>Take or choose a clear photo</strong>
+              <strong>Add a clear photo of your meal</strong>
               <p>Keep the whole plate visible, with good natural light if possible.</p>
-              <em><Camera size={16} /> Open camera</em>
-            </button>
+              <div class="photo-source-actions">
+                <button class="button button--primary" onClick={() => openFilePicker(cameraInput.current)}><Camera size={17} /> Take a photo</button>
+                <button class="button button--secondary" onClick={() => openFilePicker(galleryInput.current)}><ImagePlus size={17} /> Choose from gallery</button>
+              </div>
+            </div>
           )}
           <label class="field">
             <span>Anything the photo cannot show? <small>Optional</small></span>

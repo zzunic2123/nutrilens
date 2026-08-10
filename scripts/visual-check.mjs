@@ -20,6 +20,10 @@ try {
   await page.click('.sidebar-add')
   await page.waitForSelector('.composer-choice')
   await page.screenshot({ path: '/tmp/nutrilens-visual-composer.png' })
+  await page.click('.choice-card--photo')
+  await page.waitForSelector('.photo-source-actions')
+  await page.screenshot({ path: '/tmp/nutrilens-visual-photo.png' })
+  await page.click('.back-link')
   await page.click('.choice-card--text')
   await page.type('.composer-input textarea', 'Two slices of pizza and salad')
   await page.click('.composer-input .button--primary')
@@ -58,6 +62,9 @@ try {
   await page.click('.bottom-add')
   await page.waitForSelector('.composer-choice')
   await page.screenshot({ path: '/tmp/nutrilens-visual-mobile-composer.png' })
+  await page.click('.choice-card--photo')
+  await page.waitForSelector('.photo-source-actions')
+  await page.screenshot({ path: '/tmp/nutrilens-visual-mobile-photo.png' })
 
   console.log(JSON.stringify({ status: 'ok', lightTheme, darkTheme, screenshots: '/tmp/nutrilens-visual-*.png' }))
 } finally {

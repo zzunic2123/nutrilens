@@ -583,12 +583,14 @@ h1, h2, h3, strong { letter-spacing: -.025em; }
 .photo-dropzone-icon { width: 62px; height: 62px; display: grid; place-items: center; margin-bottom: 16px; border-radius: 20px; background: var(--brand); color: #fff; box-shadow: 0 10px 25px rgba(37,99,235,.2); }
 .photo-dropzone strong { margin-bottom: 6px; font-size: 14px; }
 .photo-dropzone p { max-width: 310px; margin-bottom: 16px; color: var(--ink-muted); font-size: 11px; line-height: 1.55; }
-.photo-dropzone em { display: inline-flex; align-items: center; gap: 6px; border-radius: 11px; padding: 9px 12px; background: var(--surface); color: var(--ink-soft); box-shadow: var(--shadow-sm); font-size: 11px; font-style: normal; font-weight: 700; }
+.photo-source-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.photo-source-actions .button { min-width: 155px; }
 .photo-preview { overflow: hidden; display: grid; grid-template-columns: 115px 1fr auto; align-items: center; gap: 13px; border: 1px solid var(--line); border-radius: 16px; padding: 8px; background: var(--surface-soft); }
 .photo-preview img { width: 115px; height: 95px; border-radius: 11px; object-fit: cover; }
-.photo-preview > div { display: flex; flex-direction: column; gap: 4px; }
-.photo-preview > div span { display: inline-flex; align-items: center; gap: 4px; color: var(--brand); font-size: 11px; font-weight: 720; }
-.photo-preview > div small { color: var(--ink-muted); font-size: 9px; }
+.photo-preview-copy { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.photo-preview-copy span { display: inline-flex; align-items: center; gap: 4px; color: var(--brand); font-size: 11px; font-weight: 720; }
+.photo-preview-copy small { overflow: hidden; color: var(--ink-muted); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.photo-preview-actions { display: flex; flex-direction: column; gap: 6px; }
 .analysis-loading { min-height: 390px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
 .analysis-loading > img { width: 150px; height: 150px; border-radius: 30px; object-fit: cover; box-shadow: var(--shadow-md); }
 .analysis-text-icon { width: 110px; height: 110px; display: grid; place-items: center; border-radius: 30px; background: var(--brand-soft); color: var(--brand); }
@@ -775,9 +777,12 @@ h1, h2, h3, strong { letter-spacing: -.025em; }
   .choice-card { min-height: 82px; grid-template-columns: 47px 1fr auto; padding: 10px; }
   .choice-card > span { width: 47px; height: 47px; }
   .photo-dropzone { min-height: 235px; }
+  .photo-source-actions { width: 100%; flex-direction: column; }
+  .photo-source-actions .button { width: 100%; }
   .photo-preview { grid-template-columns: 85px 1fr; }
   .photo-preview img { width: 85px; height: 80px; }
-  .photo-preview > .button { grid-column: span 2; }
+  .photo-preview-actions { grid-column: span 2; flex-direction: row; }
+  .photo-preview-actions .button { flex: 1; }
   .analysis-loading { min-height: 350px; }
   .nutrition-editor { grid-template-columns: repeat(2,1fr); }
   .nutrition-input--calories { grid-column: span 2; }
