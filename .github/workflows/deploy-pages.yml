@@ -15,7 +15,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  readiness:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check whether Pages deployment is enabled
+        env:
+          ENABLE_GITHUB_PAGES: ${{ vars.ENABLE_GITHUB_PAGES }}
+        run: |
+          if [ "$ENABLE_GITHUB_PAGES" != "true" ]; then
+            echo "::notice::Pages deployment is paused. Enable Pages for the repository, then set ENABLE_GITHUB_PAGES=true."
+          fi
+
   build:
+    if: vars.ENABLE_GITHUB_PAGES == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,6 +50,7 @@ jobs:
           path: dist
 
   deploy:
+    if: vars.ENABLE_GITHUB_PAGES == 'true'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
