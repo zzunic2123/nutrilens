@@ -24,7 +24,7 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/preact": "^3.2.4",
     "@types/node": "^24.13.3",
-    "jsdom": "^29.1.1",
+    "jsdom": "^30.0.1",
     "puppeteer-core": "^24.43.1",
     "typescript": "~6.0.2",
     "vite": "^8.2.0",
