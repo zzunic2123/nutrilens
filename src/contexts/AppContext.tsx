@@ -7,6 +7,7 @@ import { APP_STORAGE_KEYS } from '../lib/constants'
 import { createDemoMeals, DEMO_PROFILE, demoAnalysis } from '../lib/demo-data'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { validateNutrition } from '../lib/nutrition'
+import { mealToRepeatDraft } from '../lib/meals'
 import {
   analyzeMeal as analyzeMealRemote,
   createMeal,
@@ -15,6 +16,7 @@ import {
   removeMeal,
   removePushSubscription,
   savePushSubscription,
+  updateMealFavorite,
   updateProfile,
 } from '../services/data'
 
@@ -34,6 +36,8 @@ interface AppContextValue {
   refresh: () => Promise<void>
   saveMeal: (draft: MealDraft) => Promise<Meal>
   deleteMeal: (id: string) => Promise<void>
+  setMealFavorite: (id: string, isFavorite: boolean) => Promise<void>
+  logMealAgain: (meal: Meal) => Promise<Meal>
   saveProfile: (profile: Profile) => Promise<void>
   analyzeMeal: (input: AnalysisInput) => Promise<MealAnalysis>
   enablePush: () => Promise<void>
@@ -56,7 +60,12 @@ function readStoredProfile(): Profile {
 function readStoredMeals(): Meal[] {
   try {
     const stored = localStorage.getItem(APP_STORAGE_KEYS.demoMeals)
-    return stored ? (JSON.parse(stored) as Meal[]) : createDemoMeals()
+    const meals = stored ? (JSON.parse(stored) as Meal[]) : createDemoMeals()
+    return meals.map((meal) => ({
+      ...meal,
+      items: meal.items ?? [],
+      isFavorite: meal.isFavorite ?? false,
+    }))
   } catch {
     return createDemoMeals()
   }
@@ -194,10 +203,18 @@ export function AppProvider({ children }: { children: ComponentChildren }) {
 
       if (demoMode) {
         const now = new Date().toISOString()
+        const id = crypto.randomUUID()
         const meal: Meal = {
           ...draft,
-          id: crypto.randomUUID(),
+          id,
           userId: profile.id,
+          items: draft.items.map((item, position) => ({
+            ...item,
+            id: crypto.randomUUID(),
+            mealId: id,
+            position,
+            createdAt: now,
+          })),
           createdAt: now,
           updatedAt: now,
         }
@@ -230,14 +247,62 @@ export function AppProvider({ children }: { children: ComponentChildren }) {
     [demoMode, notify, profile],
   )
 
+  const setMealFavorite = useCallback(
+    async (id: string, isFavorite: boolean) => {
+      if (demoMode) {
+        setMeals((current) => {
+          const next = current.map((meal) => meal.id === id
+            ? { ...meal, isFavorite, updatedAt: new Date().toISOString() }
+            : meal)
+          persistDemo(profile, next)
+          return next
+        })
+      } else {
+        const saved = await updateMealFavorite(id, isFavorite)
+        setMeals((current) => current.map((meal) => meal.id === id ? saved : meal))
+      }
+      notify({
+        tone: 'success',
+        title: isFavorite ? 'Saved to favourites' : 'Removed from favourites',
+        detail: isFavorite ? 'You can now log this meal again with one tap.' : undefined,
+      })
+    },
+    [demoMode, notify, profile],
+  )
+
+  const logMealAgain = useCallback(
+    async (meal: Meal) => {
+      const saved = await saveMeal(mealToRepeatDraft(meal))
+      notify({ tone: 'success', title: 'Meal logged again', detail: `${meal.title} was added for right now.` })
+      return saved
+    },
+    [notify, saveMeal],
+  )
+
   const saveProfileValue = useCallback(
     async (nextProfile: Profile) => {
-      const saved = demoMode ? nextProfile : await updateProfile(nextProfile)
-      setProfile(saved)
-      if (demoMode) persistDemo(saved, meals)
-      notify({ tone: 'success', title: 'Settings saved', detail: 'Your targets are up to date.' })
+      const previousProfile = profile
+      const normalized = {
+        ...nextProfile,
+        displayName: nextProfile.displayName.trim(),
+        goals: { ...nextProfile.goals },
+      }
+      setProfile(normalized)
+      try {
+        let saved = normalized
+        if (!demoMode) {
+          if (!session?.user) throw new Error('Please sign in before updating your profile.')
+          saved = await updateProfile(session.user, normalized)
+        }
+        setProfile(saved)
+        if (demoMode) persistDemo(saved, meals)
+        notify({ tone: 'success', title: 'Settings saved', detail: 'Your targets are up to date.' })
+      } catch (error) {
+        setProfile(previousProfile)
+        throw error
+      }
     },
-    [demoMode, meals, notify],
+    [demoMode, meals, notify, profile, session],
   )
 
   const analyzeMealValue = useCallback(
@@ -306,6 +371,8 @@ export function AppProvider({ children }: { children: ComponentChildren }) {
       refresh: loadData,
       saveMeal,
       deleteMeal,
+      setMealFavorite,
+      logMealAgain,
       saveProfile: saveProfileValue,
       analyzeMeal: analyzeMealValue,
       enablePush,
@@ -315,7 +382,8 @@ export function AppProvider({ children }: { children: ComponentChildren }) {
     }),
     [
       session, profile, meals, loading, authReady, dataError, demoMode, toasts, signInWithGoogle,
-      signOut, startDemo, resetDemo, loadData, saveMeal, deleteMeal, saveProfileValue,
+      signOut, startDemo, resetDemo, loadData, saveMeal, deleteMeal, setMealFavorite,
+      logMealAgain, saveProfileValue,
       analyzeMealValue, enablePush, disablePush, notify, dismissToast,
     ],
   )

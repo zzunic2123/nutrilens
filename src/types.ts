@@ -1,4 +1,6 @@
-export type MealSource = 'manual' | 'text_ai' | 'photo_ai'
+export type AiMealSource = 'text_ai' | 'photo_ai'
+export type ComposerMealSource = 'manual' | AiMealSource
+export type MealSource = ComposerMealSource | 'favorite'
 export type Confidence = 'low' | 'medium' | 'high'
 export type AnalysisStatus = 'estimated' | 'needs_clarification' | 'not_food'
 export type AppPage = 'today' | 'insights' | 'settings'
@@ -28,6 +30,19 @@ export interface Profile {
   pushEnabled: boolean
 }
 
+export interface MealItemDraft {
+  name: string
+  estimatedGrams: number | null
+  preparation: string | null
+}
+
+export interface MealItem extends MealItemDraft {
+  id: string
+  mealId: string
+  position: number
+  createdAt: string
+}
+
 export interface Meal {
   id: string
   userId: string
@@ -37,6 +52,8 @@ export interface Meal {
   source: MealSource
   nutrition: Nutrition
   confidence: Confidence | null
+  items: MealItem[]
+  isFavorite: boolean
   createdAt: string
   updatedAt: string
 }
@@ -48,6 +65,8 @@ export interface MealDraft {
   source: MealSource
   nutrition: Nutrition
   confidence: Confidence | null
+  items: MealItemDraft[]
+  isFavorite: boolean
 }
 
 export interface DetectedFood {

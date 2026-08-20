@@ -12,6 +12,8 @@ const meal = (calories: number, protein: number): Meal => ({
   source: 'manual',
   nutrition: { calories, protein, carbs: 50, fat: 20, fiber: 5 },
   confidence: null,
+  items: [],
+  isFavorite: false,
   createdAt: '2026-08-10T12:00:00Z',
   updatedAt: '2026-08-10T12:00:00Z',
 })

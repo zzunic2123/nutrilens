@@ -16,7 +16,7 @@ export const DEMO_PROFILE: Profile = {
   pushEnabled: false,
 }
 
-type DemoMeal = Omit<Meal, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
+type DemoMeal = Omit<Meal, 'id' | 'userId' | 'items' | 'isFavorite' | 'createdAt' | 'updatedAt'>
 
 const dayTemplates: DemoMeal[][] = [
   [
@@ -121,11 +121,14 @@ export function createDemoMeals(): Meal[] {
     template.map((meal, mealIndex) => {
       const hours = [8, 13, 19]
       const eatenAt = at(keys[dayIndex], hours[mealIndex] ?? 16, mealIndex * 7)
+      const id = `demo-${dayIndex}-${mealIndex}`
       return {
         ...meal,
-        id: `demo-${dayIndex}-${mealIndex}`,
+        id,
         userId: DEMO_PROFILE.id,
         eatenAt,
+        items: [],
+        isFavorite: (dayIndex === 0 && mealIndex === 0) || (dayIndex === 1 && mealIndex === 0),
         createdAt: eatenAt,
         updatedAt: eatenAt,
       }

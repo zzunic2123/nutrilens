@@ -1,5 +1,6 @@
-import { ArrowLeft, ArrowRight, Camera, ChevronRight, Flame, Plus, Sparkles, Type, Zap } from 'lucide-preact'
-import type { Meal, MealSource } from '../types'
+import { ArrowLeft, ArrowRight, Camera, ChevronRight, Flame, Heart, LoaderCircle, Plus, Sparkles, Type, Zap } from 'lucide-preact'
+import { useRef, useState } from 'preact/hooks'
+import type { ComposerMealSource, Meal } from '../types'
 import { CalorieDial, MacroProgress, MealCard } from '../components/NutritionUI'
 import { useApp } from '../contexts/AppContext'
 import { MACROS } from '../lib/constants'
@@ -10,12 +11,13 @@ import { buildDaySummaries, buildRecommendations, mealTotals, mealsForDate, perc
 interface TodayPageProps {
   selectedDate: string
   onSelectedDate: (key: string) => void
-  onAdd: (mode?: MealSource) => void
+  onAdd: (mode?: ComposerMealSource) => void
   onShowInsights: () => void
+  onOpenMeal: (meal: Meal) => void
 }
 
-export function TodayPage({ selectedDate, onSelectedDate, onAdd, onShowInsights }: TodayPageProps) {
-  const { profile, meals, deleteMeal, notify, demoMode, dataError, refresh } = useApp()
+export function TodayPage({ selectedDate, onSelectedDate, onAdd, onShowInsights, onOpenMeal }: TodayPageProps) {
+  const { profile, meals, deleteMeal, logMealAgain, notify, demoMode, dataError, refresh } = useApp()
   const today = todayKey(profile.timezone)
   const dayMeals = mealsForDate(meals, selectedDate, profile.timezone).sort((a, b) => b.eatenAt.localeCompare(a.eatenAt))
   const totals = mealTotals(dayMeals)
@@ -23,6 +25,9 @@ export function TodayPage({ selectedDate, onSelectedDate, onAdd, onShowInsights 
   const recommendations = buildRecommendations(summaries, profile.goals)
   const loggedDays = summaries.filter((day) => day.mealCount > 0).length
   const caloriePercent = percentage(totals.calories, profile.goals.calories)
+  const favourites = meals.filter((meal) => meal.isFavorite).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+  const [loggingFavouriteId, setLoggingFavouriteId] = useState<string | null>(null)
+  const loggingFavouriteRef = useRef<string | null>(null)
 
   const handleDelete = async (meal: Meal) => {
     if (!window.confirm(`Delete “${meal.title}”? This cannot be undone.`)) return
@@ -30,6 +35,20 @@ export function TodayPage({ selectedDate, onSelectedDate, onAdd, onShowInsights 
       await deleteMeal(meal.id)
     } catch (error) {
       notify({ tone: 'error', title: 'Could not delete meal', detail: error instanceof Error ? error.message : undefined })
+    }
+  }
+
+  const handleLogFavourite = async (meal: Meal) => {
+    if (loggingFavouriteRef.current) return
+    loggingFavouriteRef.current = meal.id
+    setLoggingFavouriteId(meal.id)
+    try {
+      await logMealAgain(meal)
+    } catch (error) {
+      notify({ tone: 'error', title: 'Could not log favourite', detail: error instanceof Error ? error.message : undefined })
+    } finally {
+      loggingFavouriteRef.current = null
+      setLoggingFavouriteId(null)
     }
   }
 
@@ -113,6 +132,19 @@ export function TodayPage({ selectedDate, onSelectedDate, onAdd, onShowInsights 
             <button onClick={() => onAdd('text_ai')}><span><Type size={21} /></span><div><strong>Describe your meal</strong><small>“Oats with banana…”</small></div><ChevronRight size={18} /></button>
           </div>
           <button class="manual-link" onClick={() => onAdd('manual')}><Plus size={15} /> Enter nutrition manually</button>
+          {favourites.length > 0 && (
+            <div class="quick-favourites">
+              <span><Heart size={13} fill="currentColor" /> Favourites</span>
+              <div>
+                {favourites.map((meal) => (
+                  <button onClick={() => void handleLogFavourite(meal)} key={meal.id} title={`Log ${meal.title} again`} disabled={loggingFavouriteId !== null}>
+                    <strong>{meal.title}</strong><small>{formatNumber(meal.nutrition.calories)} kcal</small>
+                    {loggingFavouriteId === meal.id ? <LoaderCircle class="spin" size={14} /> : <Plus size={14} />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </article>
       </section>
 
@@ -124,7 +156,7 @@ export function TodayPage({ selectedDate, onSelectedDate, onAdd, onShowInsights 
           </div>
           {dayMeals.length > 0 ? (
             <div class="meal-list">
-              {dayMeals.map((meal) => <MealCard meal={meal} onDelete={handleDelete} key={meal.id} />)}
+              {dayMeals.map((meal) => <MealCard meal={meal} onDelete={handleDelete} onOpen={onOpenMeal} key={meal.id} />)}
               <button class="add-meal-row" onClick={() => onAdd()}><span><Plus size={18} /></span><div><strong>Add another meal</strong><small>Photo, text or manual</small></div><ChevronRight size={18} /></button>
             </div>
           ) : (

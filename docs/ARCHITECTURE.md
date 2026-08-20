@@ -24,8 +24,8 @@ flowchart LR
 4. The Edge Function validates the user, allowlist, type, size and rate limit.
 5. The function sends the image to the OpenAI Responses API with strict `text.format` JSON Schema.
 6. The function validates the structured result and returns it.
-7. The user edits and confirms the proposal.
-8. Only aggregate nutrition and user-entered text are inserted into `meals`.
+7. The user can add corrections and reprocess the same photo repeatedly, then edit and confirm the proposal.
+8. Aggregate nutrition is inserted into `meals`; the confirmed detected components are inserted into `meal_items` and remain protected by meal ownership RLS.
 
 No Storage bucket is required.
 
@@ -43,11 +43,15 @@ separate Cron secret whose database copy is encrypted in Supabase Vault.
 
 The schema is authoritative in `supabase/functions/_shared/meal-schema.ts`. All properties are required, all objects reject additional properties, and nullable values represent uncertainty. The function separately handles refusals and incomplete API responses, then performs application bounds checks even after Structured Outputs validation.
 
-Detected foods are returned only to make the estimate understandable and correctable. They are not a database entity.
+Detected foods are returned to make the estimate understandable and correctable. After confirmation they are persisted as ordered `meal_items`, allowing a user to reopen a meal and see the components behind its totals. Photos themselves remain transient and are never stored.
+
+## Meals and favourites
+
+`meals` is the aggregate nutrition record and owns zero or more `meal_items`. Item policies authorize through the parent meal, and `on delete cascade` prevents orphaned components. A favourite is still a real logged meal marked by `is_favorite`; repeating it creates a new meal occurrence with copied totals and components but does not duplicate the favourite flag or AI confidence.
 
 ## Reporting
 
-The frontend aggregates at most 120 days of the authenticated user’s meals. For the intended small group this avoids extra views, materialized tables and maintenance. Date grouping uses the profile timezone and is covered by boundary/DST tests.
+The frontend loads the authenticated user’s meal history in bounded pages so every meal remains openable. Reporting still aggregates only the selected seven- or thirty-day window, avoiding extra views and materialized tables for the intended small group. Date grouping uses the profile timezone and is covered by boundary/DST tests.
 
 Recommendations use explicit thresholds in `src/lib/nutrition.ts`; they do not spend tokens or turn the model into a health advisor.
 

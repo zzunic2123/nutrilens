@@ -1,8 +1,9 @@
-import { Camera, Sparkles, Trash2, UtensilsCrossed } from 'lucide-preact'
+import { Camera, Heart, Sparkles, Trash2, UtensilsCrossed } from 'lucide-preact'
 import type { Confidence, Meal, Nutrition } from '../types'
 import { formatMealTime } from '../lib/date'
 import { formatNumber } from '../lib/format'
 import { progress } from '../lib/nutrition'
+import { isAiMealSource } from '../lib/meals'
 
 interface CalorieDialProps {
   current: number
@@ -69,27 +70,30 @@ export function ConfidenceBadge({ confidence }: { confidence: Confidence }) {
   return <span class={`confidence confidence--${confidence}`}>{confidence} confidence</span>
 }
 
-export function MealCard({ meal, onDelete }: { meal: Meal; onDelete: (meal: Meal) => void }) {
-  const isAi = meal.source !== 'manual'
+export function MealCard({ meal, onDelete, onOpen }: { meal: Meal; onDelete: (meal: Meal) => void; onOpen: (meal: Meal) => void }) {
+  const isAi = isAiMealSource(meal.source)
   return (
     <article class="meal-card">
-      <div class={`meal-icon meal-icon--${meal.source}`}>
-        {meal.source === 'photo_ai' ? <Camera size={20} /> : isAi ? <Sparkles size={19} /> : <UtensilsCrossed size={19} />}
-      </div>
-      <div class="meal-card-copy">
-        <div class="meal-title-line">
-          <h3>{meal.title}</h3>
-          <span>{formatMealTime(meal.eatenAt)}</span>
+      <button class="meal-card-open" onClick={() => onOpen(meal)} aria-label={`Open ${meal.title}`}>
+        <div class={`meal-icon meal-icon--${meal.source}`}>
+          {meal.source === 'photo_ai' ? <Camera size={20} /> : isAi ? <Sparkles size={19} /> : meal.source === 'favorite' ? <Heart size={19} /> : <UtensilsCrossed size={19} />}
         </div>
-        {meal.notes && <p>{meal.notes}</p>}
-        <div class="meal-macros">
-          <strong>{formatNumber(meal.nutrition.calories)} kcal</strong>
-          <span>{formatNumber(meal.nutrition.protein)}g P</span>
-          <span>{formatNumber(meal.nutrition.carbs)}g C</span>
-          <span>{formatNumber(meal.nutrition.fat)}g F</span>
-          {isAi && <span class="ai-tag"><Sparkles size={12} /> AI estimate</span>}
+        <div class="meal-card-copy">
+          <div class="meal-title-line">
+            <h3>{meal.title}</h3>
+            {meal.isFavorite && <Heart class="meal-favourite-mark" size={13} fill="currentColor" aria-label="Favourite meal" />}
+            <span>{formatMealTime(meal.eatenAt)}</span>
+          </div>
+          {meal.notes && <p>{meal.notes}</p>}
+          <div class="meal-macros">
+            <strong>{formatNumber(meal.nutrition.calories)} kcal</strong>
+            <span>{formatNumber(meal.nutrition.protein)}g P</span>
+            <span>{formatNumber(meal.nutrition.carbs)}g C</span>
+            <span>{formatNumber(meal.nutrition.fat)}g F</span>
+            {isAi && <span class="ai-tag"><Sparkles size={12} /> AI estimate</span>}
+          </div>
         </div>
-      </div>
+      </button>
       <div class="meal-actions">
         <button class="meal-delete" onClick={() => onDelete(meal)} aria-label={`Delete ${meal.title}`}>
           <Trash2 size={16} />

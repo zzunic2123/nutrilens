@@ -127,7 +127,9 @@ Test at least:
 - invited Google account can sign in;
 - a non-invited account cannot read/write data or analyse food;
 - manual meal save and delete;
-- text and photo estimates;
+- text and photo estimates, including repeated review-screen corrections;
+- meal detail components, favourite toggling and one-tap repeat logging;
+- profile goal changes persist after a reload;
 - refusal, timeout and daily-limit errors;
 - two users cannot read each other’s meals;
 - notification subscription from each target phone/browser;

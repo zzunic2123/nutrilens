@@ -1,5 +1,5 @@
 import type { User } from '@supabase/supabase-js'
-import type { AnalysisInput, Meal, MealAnalysis, MealDraft, Profile } from '../types'
+import type { AnalysisInput, Meal, MealAnalysis, MealDraft, MealItem, Profile } from '../types'
 import { DEFAULT_GOALS, APP_TIMEZONE } from '../lib/constants'
 import { supabase } from '../lib/supabase'
 
@@ -16,8 +16,20 @@ interface MealRow {
   fat_g: number
   fiber_g: number | null
   ai_confidence: Meal['confidence']
+  is_favorite: boolean
   created_at: string
   updated_at: string
+  meal_items?: MealItemRow[] | null
+}
+
+interface MealItemRow {
+  id: string
+  meal_id: string
+  position: number
+  name: string
+  estimated_grams: number | null
+  preparation: string | null
+  created_at: string
 }
 
 interface ProfileRow {
@@ -31,6 +43,18 @@ interface ProfileRow {
   daily_fiber_target_g: number
   timezone: string
   push_enabled: boolean
+}
+
+function mapMealItem(row: MealItemRow): MealItem {
+  return {
+    id: row.id,
+    mealId: row.meal_id,
+    position: row.position,
+    name: row.name,
+    estimatedGrams: row.estimated_grams == null ? null : Number(row.estimated_grams),
+    preparation: row.preparation,
+    createdAt: row.created_at,
+  }
 }
 
 function mapMeal(row: MealRow): Meal {
@@ -49,6 +73,8 @@ function mapMeal(row: MealRow): Meal {
       fiber: row.fiber_g == null ? null : Number(row.fiber_g),
     },
     confidence: row.ai_confidence,
+    items: (row.meal_items ?? []).map(mapMealItem).sort((a, b) => a.position - b.position),
+    isFavorite: row.is_favorite ?? false,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -77,14 +103,21 @@ function requireClient() {
 }
 
 export async function fetchMeals(): Promise<Meal[]> {
-  const since = new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString()
-  const { data, error } = await requireClient()
-    .from('meals')
-    .select('*')
-    .gte('eaten_at', since)
-    .order('eaten_at', { ascending: false })
-  if (error) throw error
-  return (data as MealRow[]).map(mapMeal)
+  const client = requireClient()
+  const pageSize = 500
+  const rows: MealRow[] = []
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await client
+      .from('meals')
+      .select('*, meal_items(*)')
+      .order('eaten_at', { ascending: false })
+      .range(from, from + pageSize - 1)
+    if (error) throw error
+    const page = data as MealRow[]
+    rows.push(...page)
+    if (page.length < pageSize) break
+  }
+  return rows.map(mapMeal)
 }
 
 export async function fetchProfile(user: User): Promise<Profile> {
@@ -114,24 +147,31 @@ export async function fetchProfile(user: User): Promise<Profile> {
 }
 
 export async function createMeal(userId: string, draft: MealDraft): Promise<Meal> {
-  const { data, error } = await requireClient()
-    .from('meals')
-    .insert({
-      user_id: userId,
-      eaten_at: draft.eatenAt,
-      title: draft.title.trim(),
-      notes: draft.notes?.trim() || null,
-      source: draft.source,
-      calories_kcal: draft.nutrition.calories,
-      protein_g: draft.nutrition.protein,
-      carbs_g: draft.nutrition.carbs,
-      fat_g: draft.nutrition.fat,
-      fiber_g: draft.nutrition.fiber,
-      ai_confidence: draft.confidence,
-    })
-    .select('*')
-    .single()
+  const client = requireClient()
+  const { data: mealId, error } = await client.rpc('create_meal_with_items', {
+    p_eaten_at: draft.eatenAt,
+    p_title: draft.title,
+    p_notes: draft.notes ?? '',
+    p_source: draft.source,
+    p_calories_kcal: draft.nutrition.calories,
+    p_protein_g: draft.nutrition.protein,
+    p_carbs_g: draft.nutrition.carbs,
+    p_fat_g: draft.nutrition.fat,
+    p_fiber_g: draft.nutrition.fiber,
+    p_ai_confidence: draft.confidence,
+    p_is_favorite: draft.isFavorite,
+    p_items: draft.items,
+  })
   if (error) throw error
+  if (typeof mealId !== 'string') throw new Error('The meal was created without an identifier.')
+
+  const { data, error: readError } = await client
+    .from('meals')
+    .select('*, meal_items(*)')
+    .eq('id', mealId)
+    .eq('user_id', userId)
+    .single()
+  if (readError) throw readError
   return mapMeal(data as MealRow)
 }
 
@@ -140,10 +180,23 @@ export async function removeMeal(id: string): Promise<void> {
   if (error) throw error
 }
 
-export async function updateProfile(profile: Profile): Promise<Profile> {
+export async function updateMealFavorite(id: string, isFavorite: boolean): Promise<Meal> {
+  const { data, error } = await requireClient()
+    .from('meals')
+    .update({ is_favorite: isFavorite })
+    .eq('id', id)
+    .select('*, meal_items(*)')
+    .single()
+  if (error) throw error
+  return mapMeal(data as MealRow)
+}
+
+export async function updateProfile(user: User, profile: Profile): Promise<Profile> {
   const { data, error } = await requireClient()
     .from('profiles')
-    .update({
+    .upsert({
+      id: user.id,
+      email: user.email ?? profile.email,
       display_name: profile.displayName.trim(),
       daily_calories_target: profile.goals.calories,
       daily_protein_target_g: profile.goals.protein,
@@ -152,8 +205,7 @@ export async function updateProfile(profile: Profile): Promise<Profile> {
       daily_fiber_target_g: profile.goals.fiber,
       timezone: profile.timezone,
       push_enabled: profile.pushEnabled,
-    })
-    .eq('id', profile.id)
+    }, { onConflict: 'id' })
     .select('*')
     .single()
   if (error) throw error

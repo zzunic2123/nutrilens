@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'preact/hooks'
 import { registerSW } from 'virtual:pwa-register'
-import type { AppPage, MealSource } from './types'
+import type { AppPage, ComposerMealSource, Meal } from './types'
 import { AppShell } from './components/AppShell'
 import { LoadingScreen, ToastViewport, WorkspaceError } from './components/Feedback'
 import { MealComposer } from './components/MealComposer'
+import { MealDetailModal } from './components/MealDetailModal'
 import { useApp } from './contexts/AppContext'
 import { todayKey } from './lib/date'
 import { LoginPage } from './pages/LoginPage'
@@ -19,10 +20,11 @@ function pageFromHash(): AppPage {
 }
 
 export function App() {
-  const { session, profile, loading, demoMode, dataError, refresh, signOut, notify } = useApp()
+  const { session, profile, meals, loading, demoMode, dataError, refresh, signOut, notify } = useApp()
   const [page, setPage] = useState<AppPage>(pageFromHash)
   const [composerOpen, setComposerOpen] = useState(false)
-  const [composerMode, setComposerMode] = useState<MealSource | null>(null)
+  const [composerMode, setComposerMode] = useState<ComposerMealSource | null>(null)
+  const [selectedMealId, setSelectedMealId] = useState<string | null>(null)
   const [composerDate, setComposerDate] = useState(() => todayKey(profile.timezone))
   const [selectedDate, setSelectedDate] = useState(() => todayKey(profile.timezone))
 
@@ -32,12 +34,15 @@ export function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [])
 
-  const openComposer = useCallback((mode?: MealSource, dateKey = todayKey(profile.timezone)) => {
+  const openComposer = useCallback((mode?: ComposerMealSource, dateKey = todayKey(profile.timezone)) => {
     setComposerMode(mode ?? null)
     setComposerDate(dateKey)
     setComposerOpen(true)
   }, [profile.timezone])
   const closeComposer = useCallback(() => setComposerOpen(false), [])
+  const openMeal = useCallback((meal: Meal) => setSelectedMealId(meal.id), [])
+  const closeMeal = useCallback(() => setSelectedMealId(null), [])
+  const selectedMeal = selectedMealId ? meals.find((meal) => meal.id === selectedMealId) ?? null : null
 
   useEffect(() => {
     const handleHash = () => setPage(pageFromHash())
@@ -87,6 +92,7 @@ export function App() {
             onSelectedDate={setSelectedDate}
             onAdd={(mode) => openComposer(mode, selectedDate)}
             onShowInsights={() => navigate('insights')}
+            onOpenMeal={openMeal}
           />
         )}
         {page === 'insights' && <InsightsPage />}
@@ -98,6 +104,7 @@ export function App() {
         initialDateKey={composerDate}
         onClose={closeComposer}
       />
+      <MealDetailModal meal={selectedMeal} onClose={closeMeal} />
       <ToastViewport />
     </>
   )

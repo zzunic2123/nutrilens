@@ -11,8 +11,9 @@ The application works immediately in a polished local demo mode. Connecting Supa
 - Google authentication flow through Supabase Auth
 - Photo, text and manual meal-entry paths
 - Browser-side photo resizing, metadata removal and compression
-- Mandatory edit/confirmation screen before AI estimates are saved
-- One aggregate database row per meal—no `meal_items` table
+- Mandatory edit/confirmation screen with repeatable natural-language reprocessing before AI estimates are saved
+- Persistent meal components with a detailed view for every logged meal
+- Favourite meals with one-tap repeat logging
 - Strict OpenAI Responses API JSON Schema
 - Daily calories, protein, carbohydrates, fat and fiber progress
 - Seven- and thirty-day reports with custom lightweight SVG/CSS charts
@@ -77,12 +78,13 @@ Follow [docs/SETUP.md](docs/SETUP.md) in order. The short version is:
 
 - `profiles`: display name, targets, timezone and push preference
 - `allowed_users`: invite-only email allowlist
-- `meals`: one confirmed total per meal
+- `meals`: one confirmed total per meal, including favourite state
+- `meal_items`: ordered components detected or entered for a meal
 - `ai_usage`: request ID, model and token counts—never photos or prompts
 - `push_subscriptions`: browser delivery endpoints and Web Push public encryption material
 - `notification_deliveries`: idempotency records preventing duplicate notifications
 
-Detected foods in an AI response are transient review information. They are deliberately not saved as separate database items.
+Detected foods in an AI response become user-owned `meal_items` when the user confirms the estimate. They are shown in the meal detail view and deleted automatically with their parent meal.
 
 ## Privacy and accuracy
 

@@ -1,18 +1,19 @@
 import { AlertCircle, ArrowLeft, ArrowRight, Camera, Check, ImagePlus, Info, Keyboard, LoaderCircle, Plus, Sparkles, Type, UtensilsCrossed, WandSparkles } from 'lucide-preact'
 import { useEffect, useRef, useState } from 'preact/hooks'
-import type { MealAnalysis, MealDraft, MealSource, Nutrition } from '../types'
+import type { ComposerMealSource, MealAnalysis, MealDraft, MealSource, Nutrition } from '../types'
 import { useApp } from '../contexts/AppContext'
 import { compressMealImage, dataUrlSizeInBytes } from '../lib/image'
 import { toLocalDateTimeInput } from '../lib/date'
+import { detectedFoodsToMealItems } from '../lib/meals'
 import { Modal } from './Modal'
 import { ConfidenceBadge } from './NutritionUI'
 
-type ComposerMode = 'photo_ai' | 'text_ai' | 'manual'
+type ComposerMode = ComposerMealSource
 type Stage = 'choose' | 'input' | 'analyzing' | 'review'
 
 interface MealComposerProps {
   open: boolean
-  initialMode?: MealSource | null
+  initialMode?: ComposerMealSource | null
   initialDateKey?: string
   onClose: () => void
 }
@@ -40,6 +41,8 @@ function newDraft(source: MealSource, dateKey?: string): MealDraft {
     source,
     nutrition: emptyNutrition(),
     confidence: null,
+    items: [],
+    isFavorite: false,
   }
 }
 
@@ -51,6 +54,7 @@ export function MealComposer({ open, initialMode, initialDateKey, onClose }: Mea
   const [photo, setPhoto] = useState<string | null>(null)
   const [photoName, setPhotoName] = useState('')
   const [analysis, setAnalysis] = useState<MealAnalysis | null>(null)
+  const [refinement, setRefinement] = useState('')
   const [draft, setDraft] = useState<MealDraft>(newDraft('manual'))
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -67,6 +71,7 @@ export function MealComposer({ open, initialMode, initialDateKey, onClose }: Mea
     setPhoto(null)
     setPhotoName('')
     setAnalysis(null)
+    setRefinement('')
     setDraft(newDraft(nextMode ?? 'manual', initialDateKey))
     setError(null)
     setSaving(false)
@@ -110,31 +115,23 @@ export function MealComposer({ open, initialMode, initialDateKey, onClose }: Mea
     input.click()
   }
 
-  const runAnalysis = async () => {
-    if (mode === 'text_ai' && text.trim().length < 3) {
-      setError('Describe at least the main food and portion.')
-      return
-    }
-    if (mode === 'photo_ai' && !photo) {
-      setError('Choose or take a photo first.')
-      return
-    }
+  const executeAnalysis = async (context: string, returnStage: 'input' | 'review') => {
     setStage('analyzing')
     setError(null)
     try {
       const result = await analyzeMeal(
         mode === 'photo_ai'
-          ? { mode: 'photo', imageDataUrl: photo!, text: text.trim() || undefined }
-          : { mode: 'text', text: text.trim() },
+          ? { mode: 'photo', imageDataUrl: photo!, text: context || undefined }
+          : { mode: 'text', text: context },
       )
       if (result.status === 'not_food') {
         setError('This does not appear to show or describe food. Try another input.')
-        setStage('input')
-        return
+        setStage(returnStage)
+        return false
       }
       setAnalysis(result)
-      setDraft({
-        eatenAt: initialDateKey ? new Date(`${initialDateKey}T12:00:00Z`).toISOString() : new Date().toISOString(),
+      setDraft((current) => ({
+        eatenAt: current.eatenAt,
         title: result.title,
         notes: result.description || null,
         source: mode ?? 'text_ai',
@@ -146,11 +143,45 @@ export function MealComposer({ open, initialMode, initialDateKey, onClose }: Mea
           fiber: result.nutrition.fiber_g,
         },
         confidence: result.confidence,
-      })
+        items: detectedFoodsToMealItems(result.detected_foods),
+        isFavorite: current.isFavorite,
+      }))
       setStage('review')
+      return true
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : 'The meal could not be analysed. Please try again.')
-      setStage('input')
+      setStage(returnStage)
+      return false
+    }
+  }
+
+  const runAnalysis = async () => {
+    if (mode === 'text_ai' && text.trim().length < 3) {
+      setError('Describe at least the main food and portion.')
+      return
+    }
+    if (mode === 'photo_ai' && !photo) {
+      setError('Choose or take a photo first.')
+      return
+    }
+    await executeAnalysis(text.trim(), 'input')
+  }
+
+  const reprocessAnalysis = async () => {
+    const detail = refinement.trim()
+    if (detail.length < 2) {
+      setError('Add the missing ingredient, quantity or correction first.')
+      return
+    }
+    const context = [text.trim(), `Correction or additional detail: ${detail}`].filter(Boolean).join('\n')
+    if (context.length > 2_000) {
+      setError('The accumulated meal details are too long. Shorten the correction and try again.')
+      return
+    }
+    const success = await executeAnalysis(context, 'review')
+    if (success) {
+      setText(context)
+      setRefinement('')
     }
   }
 
@@ -337,6 +368,23 @@ export function MealComposer({ open, initialMode, initialDateKey, onClose }: Mea
               <label class="nutrition-input nutrition-input--fat"><span>Fat</span><div><input type="number" inputMode="decimal" min="0" value={draft.nutrition.fat} onInput={(event) => updateNutrition('fat', event.currentTarget.value)} /><em>g</em></div></label>
               <label class="nutrition-input nutrition-input--fiber"><span>Fiber <small>Optional</small></span><div><input type="number" inputMode="decimal" min="0" value={draft.nutrition.fiber ?? ''} onInput={(event) => updateNutrition('fiber', event.currentTarget.value)} /><em>g</em></div></label>
             </div>
+            {analysis && (
+              <div class="refinement-editor">
+                <div>
+                  <span><WandSparkles size={16} /></span>
+                  <p><strong>Tell NutriLens what it missed</strong><small>Add a quantity, hidden ingredient, sauce or correction, then reprocess the complete meal.</small></p>
+                </div>
+                <textarea
+                  rows={2}
+                  value={refinement}
+                  onInput={(event) => setRefinement(event.currentTarget.value)}
+                  placeholder="e.g. There were two eggs, and the dressing had one tablespoon of olive oil"
+                />
+                <button class="button button--secondary" onClick={() => void reprocessAnalysis()} disabled={!refinement.trim()}>
+                  <WandSparkles size={17} /> Reprocess estimate
+                </button>
+              </div>
+            )}
             {error && <div class="form-error"><AlertCircle size={17} />{error}</div>}
             <div class="review-actions">
               <button class="button button--secondary" onClick={() => analysis ? setStage('input') : setStage('choose')}><ArrowLeft size={17} /> Back</button>
@@ -363,7 +411,7 @@ export function MealComposer({ open, initialMode, initialDateKey, onClose }: Mea
               {analysis.assumptions.length > 0 && (
                 <div class="assumptions"><span class="eyebrow">Assumptions</span><ul>{analysis.assumptions.map((item) => <li key={item}>{item}</li>)}</ul></div>
               )}
-              <p class="review-note"><Info size={15} /> Detected foods help you review the estimate. They are not stored as separate meal items.</p>
+              <p class="review-note"><Info size={15} /> Detected foods are saved with this meal so you can reopen and understand it later.</p>
             </aside>
           )}
         </div>
