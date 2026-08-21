@@ -36,6 +36,15 @@ try {
   await new Promise((resolve) => setTimeout(resolve, 450))
   await page.screenshot({ path: '/tmp/nutrilens-visual-insights.png', fullPage: true })
 
+  await page.goto(`${baseUrl}#leaderboard`, { waitUntil: 'networkidle0' })
+  await page.waitForSelector('.leaderboard-row')
+  await page.screenshot({ path: '/tmp/nutrilens-visual-leaderboard.png', fullPage: true })
+  await page.click('.leaderboard-row')
+  await page.waitForSelector('.public-meal-card')
+  await page.screenshot({ path: '/tmp/nutrilens-visual-player-meals.png' })
+  await page.keyboard.press('Escape')
+  await page.waitForSelector('.modal-layer', { hidden: true })
+
   await page.goto(`${baseUrl}#settings`, { waitUntil: 'networkidle0' })
   await new Promise((resolve) => setTimeout(resolve, 450))
   const lightTheme = await page.evaluate(() => ({
@@ -53,12 +62,18 @@ try {
     bodyBackground: getComputedStyle(document.body).backgroundColor,
   }))
   await page.screenshot({ path: '/tmp/nutrilens-visual-dark.png' })
+  await page.goto(`${baseUrl}#leaderboard`, { waitUntil: 'networkidle0' })
+  await page.waitForSelector('.leaderboard-row')
+  await page.screenshot({ path: '/tmp/nutrilens-visual-dark-leaderboard.png', fullPage: true })
 
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 })
   await page.goto(`${baseUrl}#today`, { waitUntil: 'networkidle0' })
   await page.evaluate(() => localStorage.setItem('nutrilens:theme', 'light'))
   await page.reload({ waitUntil: 'networkidle0' })
   await page.screenshot({ path: '/tmp/nutrilens-visual-mobile.png' })
+  await page.click('.bottom-nav button:nth-child(4)')
+  await page.waitForSelector('.leaderboard-row')
+  await page.screenshot({ path: '/tmp/nutrilens-visual-mobile-leaderboard.png', fullPage: true })
   await page.click('.bottom-add')
   await page.waitForSelector('.composer-choice')
   await page.screenshot({ path: '/tmp/nutrilens-visual-mobile-composer.png' })

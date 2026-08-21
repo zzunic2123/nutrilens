@@ -3,7 +3,9 @@ export type ComposerMealSource = 'manual' | AiMealSource
 export type MealSource = ComposerMealSource | 'favorite'
 export type Confidence = 'low' | 'medium' | 'high'
 export type AnalysisStatus = 'estimated' | 'needs_clarification' | 'not_food'
-export type AppPage = 'today' | 'insights' | 'settings'
+export type AppPage = 'today' | 'insights' | 'leaderboard' | 'settings'
+export type LeaderboardPeriod = 'today' | 'week' | 'month'
+export type ChampionPeriod = Exclude<LeaderboardPeriod, 'today'>
 
 export interface Nutrition {
   calories: number
@@ -67,6 +69,84 @@ export interface MealDraft {
   confidence: Confidence | null
   items: MealItemDraft[]
   isFavorite: boolean
+}
+
+export interface CompetitionWindow {
+  period: LeaderboardPeriod
+  startKey: string
+  endKey: string
+}
+
+export interface LeaderboardStat {
+  userId: string
+  displayName: string
+  protein: number
+  calories: number
+  loggedDays: number
+  mealCount: number
+  isCurrentUser?: boolean
+}
+
+export interface LeaderboardEntry extends LeaderboardStat {
+  rank: number
+  score: number | null
+  eligible: boolean
+}
+
+export interface ChampionRecord {
+  id: string
+  period: ChampionPeriod
+  startKey: string
+  endKey: string
+  userId: string | null
+  displayName: string
+  score: number
+  protein: number
+  calories: number
+  loggedDays: number
+  declaredAt: string
+}
+
+export interface LeaderboardOverview extends CompetitionWindow {
+  entries: LeaderboardEntry[]
+  latestWeekChampions: ChampionRecord[]
+  latestMonthChampions: ChampionRecord[]
+  championHistory: ChampionRecord[]
+  historyHasMore: boolean
+}
+
+export interface PublicMealItem {
+  id: string
+  name: string
+  estimatedGrams: number | null
+  preparation: string | null
+}
+
+export interface PublicMeal {
+  id: string
+  userId: string
+  eatenAt: string
+  title: string
+  nutrition: Nutrition
+  items: PublicMealItem[]
+}
+
+export interface PublicMealDay {
+  key: string
+  meals: PublicMeal[]
+}
+
+export interface PublicMealCursor {
+  eatenAt: string
+  id: string
+}
+
+export interface PlayerMealTimeline extends CompetitionWindow {
+  userId: string
+  displayName: string
+  meals: PublicMeal[]
+  hasMore: boolean
+  nextCursor: PublicMealCursor | null
 }
 
 export interface DetectedFood {

@@ -6,12 +6,15 @@
 flowchart LR
   PWA[GitHub Pages PWA] -->|OAuth| Auth[Supabase Auth]
   PWA -->|JWT + RLS| DB[(Supabase Postgres)]
+  PWA -->|JWT + sanitized RPC| League[Leaderboard read boundary]
+  League --> DB
   PWA -->|JWT + text/compressed image| Analyze[analyze-meal Edge Function]
   Analyze -->|server secret| OpenAI[OpenAI Responses API]
   Analyze -->|usage metadata only| DB
   Vault[Supabase Vault] -->|encrypted Cron credential| Cron[Supabase Cron]
   Cron -->|x-cron-secret| Remind[send-reminders Edge Function]
   Remind --> DB
+  Remind -->|declare closed periods| League
   Remind --> Push[Browser Web Push services]
   Push --> SW[PWA service worker]
 ```
@@ -31,7 +34,9 @@ No Storage bucket is required.
 
 ## Authorization
 
-The public publishable Supabase key identifies the project, not a privileged user. Every data table has Row Level Security enabled. `meals`, `profiles` and `push_subscriptions` require both `auth.uid()` ownership and an entry in `allowed_users` matching the authenticated email.
+The public publishable Supabase key identifies the project, not a privileged user. Every data table has Row Level Security enabled. Direct access to `meals`, `meal_items`, `profiles` and `push_subscriptions` requires ownership and an entry in `allowed_users` matching the authenticated email.
+
+The Leaderboard is the deliberate exception to owner-only visibility, but it does not relax table policies. Security-definer functions first verify the caller against the allowlist, derive Players from allowlisted authentication users with profiles, and return a fixed projection. Standings expose display names and aggregate nutrition only. Public Meal View exposes meal name, time, nutrition, and components for the current Competition Period or the exact winning period of a stored Champion. It never returns email, notes, favourite state, meal source, confidence, or AI metadata. Champion History and Public Meal View use bounded pages with explicit load-more controls; the live roster remains complete.
 
 The current Supabase secret key (or a legacy service-role key) is available only
 inside Supabase Edge Functions. The functions support both key generations. The
@@ -49,9 +54,11 @@ Detected foods are returned to make the estimate understandable and correctable.
 
 `meals` is the aggregate nutrition record and owns zero or more `meal_items`. Item policies authorize through the parent meal, and `on delete cascade` prevents orphaned components. A favourite is still a real logged meal marked by `is_favorite`; repeating it creates a new meal occurrence with copied totals and components but does not duplicate the favourite flag or AI confidence.
 
-## Reporting
+## Reporting and competition
 
 The frontend loads the authenticated user’s meal history in bounded pages so every meal remains openable. Reporting still aggregates only the selected seven- or thirty-day window, avoiding extra views and materialized tables for the intended small group. Date grouping uses the profile timezone and is covered by boundary/DST tests.
+
+Competition dates are intentionally separate from personal reporting dates: all Players share the `Europe/Zagreb` day, Monday-to-Sunday week, and calendar month. PostgreSQL computes Protein Efficiency as `(protein grams / calories) × 1,000` using unrounded totals. Weekly declarations require four logged days and monthly declarations require fifteen. Closed-period declarations are idempotent snapshots in `leaderboard_periods` and `leaderboard_champions`, so later meal edits or deletion cannot change a trophy. The five-minute Cron path declares newly closed periods, while an allowed Leaderboard read performs the same catch-up operation if scheduled processing was delayed.
 
 Recommendations use explicit thresholds in `src/lib/nutrition.ts`; they do not spend tokens or turn the model into a health advisor.
 

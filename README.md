@@ -1,6 +1,6 @@
 # NutriLens
 
-NutriLens is a lightweight, installable calorie and macro journal built for a small invite-only group. It supports photo analysis, natural-language meal descriptions, manual entry, daily and weekly insight views, and fixed Web Push reminders.
+NutriLens is a lightweight, installable calorie and macro journal built for a small invite-only group. It supports photo analysis, natural-language meal descriptions, manual entry, personal insights, a shared protein-efficiency competition, and fixed Web Push reminders.
 
 The application works immediately in a polished local demo mode. Connecting Supabase enables real accounts and persistence; connecting OpenAI enables structured food analysis.
 
@@ -14,11 +14,13 @@ The application works immediately in a polished local demo mode. Connecting Supa
 - Mandatory edit/confirmation screen with repeatable natural-language reprocessing before AI estimates are saved
 - Persistent meal components with a detailed view for every logged meal
 - Favourite meals with one-tap repeat logging
+- Today, calendar-week and calendar-month Leaderboards for every invited Player
+- Period-scoped friend meal views plus immutable weekly and monthly Champion history
 - Strict OpenAI Responses API JSON Schema
 - Daily calories, protein, carbohydrates, fat and fiber progress
 - Seven- and thirty-day reports with custom lightweight SVG/CSS charts
 - Deterministic, goal-based guidance instead of extra AI calls
-- Per-user Postgres Row Level Security and email allowlist
+- Per-user Postgres Row Level Security, an email allowlist, and narrowly sanitized cross-user leaderboard reads
 - Fixed reminders in code, Web Push subscriptions and duplicate-delivery protection
 - Dark, light and system appearance modes
 - GitHub Pages and Supabase deployment workflows
@@ -83,8 +85,10 @@ Follow [docs/SETUP.md](docs/SETUP.md) in order. The short version is:
 - `ai_usage`: request ID, model and token counts—never photos or prompts
 - `push_subscriptions`: browser delivery endpoints and Web Push public encryption material
 - `notification_deliveries`: idempotency records preventing duplicate notifications
+- `leaderboard_periods`: immutable declarations for completed Zagreb weeks and months
+- `leaderboard_champions`: first-place result snapshots, including exact co-Champions
 
-Detected foods in an AI response become user-owned `meal_items` when the user confirms the estimate. They are shown in the meal detail view and deleted automatically with their parent meal.
+Detected foods in an AI response become user-owned `meal_items` when the user confirms the estimate. They are shown in the meal detail view and deleted automatically with their parent meal. Direct table access stays owner-only; authenticated allowlisted Players receive only display names, aggregate competition totals, and period-scoped public meal fields through dedicated database functions.
 
 ## Privacy and accuracy
 
@@ -94,5 +98,6 @@ Detected foods in an AI response become user-owned `meal_items` when the user co
 - The app requires user confirmation before an estimate becomes a meal.
 - Food-photo nutrition values are estimates, especially for portions, oils, sauces and hidden ingredients.
 - Guidance is informational and is not medical advice.
+- Shared meal views omit email, notes, favourite state, source, confidence, and all AI metadata.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the request and security boundaries.

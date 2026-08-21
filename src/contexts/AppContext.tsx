@@ -2,15 +2,34 @@ import type { ComponentChildren } from 'preact'
 import { createContext } from 'preact'
 import { useCallback, useContext, useEffect, useMemo, useState } from 'preact/hooks'
 import type { Session } from '@supabase/supabase-js'
-import type { AnalysisInput, Meal, MealAnalysis, MealDraft, Profile, ToastMessage } from '../types'
+import type {
+  AnalysisInput,
+  LeaderboardOverview,
+  LeaderboardPeriod,
+  Meal,
+  MealAnalysis,
+  MealDraft,
+  PlayerMealTimeline,
+  Profile,
+  PublicMealCursor,
+  ToastMessage,
+} from '../types'
 import { APP_STORAGE_KEYS } from '../lib/constants'
-import { createDemoMeals, DEMO_PROFILE, demoAnalysis } from '../lib/demo-data'
+import {
+  createDemoMeals,
+  DEMO_PROFILE,
+  demoAnalysis,
+  demoLeaderboardOverview,
+  demoPlayerMealTimeline,
+} from '../lib/demo-data'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { validateNutrition } from '../lib/nutrition'
 import { mealToRepeatDraft } from '../lib/meals'
 import {
   analyzeMeal as analyzeMealRemote,
   createMeal,
+  fetchLeaderboard,
+  fetchLeaderboardPlayerMeals,
   fetchMeals,
   fetchProfile,
   removeMeal,
@@ -38,6 +57,8 @@ interface AppContextValue {
   deleteMeal: (id: string) => Promise<void>
   setMealFavorite: (id: string, isFavorite: boolean) => Promise<void>
   logMealAgain: (meal: Meal) => Promise<Meal>
+  loadLeaderboard: (period: LeaderboardPeriod, historyOffset?: number) => Promise<LeaderboardOverview>
+  loadLeaderboardPlayerMeals: (userId: string, period: LeaderboardPeriod, periodStart?: string | null, cursor?: PublicMealCursor | null) => Promise<PlayerMealTimeline>
   saveProfile: (profile: Profile) => Promise<void>
   analyzeMeal: (input: AnalysisInput) => Promise<MealAnalysis>
   enablePush: () => Promise<void>
@@ -279,6 +300,20 @@ export function AppProvider({ children }: { children: ComponentChildren }) {
     [notify, saveMeal],
   )
 
+  const loadLeaderboardValue = useCallback(
+    async (period: LeaderboardPeriod, historyOffset = 0) => demoMode
+      ? demoLeaderboardOverview(period, meals)
+      : fetchLeaderboard(period, historyOffset),
+    [demoMode, meals],
+  )
+
+  const loadLeaderboardPlayerMealsValue = useCallback(
+    async (userId: string, period: LeaderboardPeriod, periodStart: string | null = null, cursor: PublicMealCursor | null = null) => demoMode
+      ? demoPlayerMealTimeline(userId, period, periodStart, meals)
+      : fetchLeaderboardPlayerMeals(userId, period, periodStart, cursor),
+    [demoMode, meals],
+  )
+
   const saveProfileValue = useCallback(
     async (nextProfile: Profile) => {
       const previousProfile = profile
@@ -373,6 +408,8 @@ export function AppProvider({ children }: { children: ComponentChildren }) {
       deleteMeal,
       setMealFavorite,
       logMealAgain,
+      loadLeaderboard: loadLeaderboardValue,
+      loadLeaderboardPlayerMeals: loadLeaderboardPlayerMealsValue,
       saveProfile: saveProfileValue,
       analyzeMeal: analyzeMealValue,
       enablePush,
@@ -384,6 +421,7 @@ export function AppProvider({ children }: { children: ComponentChildren }) {
       session, profile, meals, loading, authReady, dataError, demoMode, toasts, signInWithGoogle,
       signOut, startDemo, resetDemo, loadData, saveMeal, deleteMeal, setMealFavorite,
       logMealAgain, saveProfileValue,
+      loadLeaderboardValue, loadLeaderboardPlayerMealsValue,
       analyzeMealValue, enablePush, disablePush, notify, dismissToast,
     ],
   )

@@ -108,10 +108,10 @@ It intentionally uses `--no-verify-jwt` because it is invoked by Cron, but it re
 Enable Supabase Cron, `pg_net` and Vault. In **Integrations → Vault**, add
 `nutrilens_function_url` and `nutrilens_cron_secret` exactly as described at
 the top of `supabase/snippets/configure_reminder_cron.sql`, then run that
-snippet. Cron runs every five minutes; the function decides whether a fixed
-Europe/Zagreb reminder is due. This keeps daylight-saving logic out of UTC Cron
-expressions and keeps the Cron credential encrypted rather than embedded in the
-scheduled command.
+snippet. Cron runs every five minutes; the function declares newly completed
+Leaderboard periods and then decides whether a fixed Europe/Zagreb reminder is
+due. This keeps daylight-saving logic out of UTC Cron expressions and keeps the
+Cron credential encrypted rather than embedded in the scheduled command.
 
 ## 7. Test locally with real services
 
@@ -131,7 +131,12 @@ Test at least:
 - meal detail components, favourite toggling and one-tap repeat logging;
 - profile goal changes persist after a reload;
 - refusal, timeout and daily-limit errors;
-- two users cannot read each other’s meals;
+- two users cannot directly query each other’s meals or profiles;
+- an invited user can see every invited Player in Today, Week, and Month standings;
+- a Player meal view contains names, times, nutrition, and components but no notes, email, favourites, source, confidence, or AI metadata;
+- historical meal access succeeds only for a stored Champion’s exact winning period;
+- weekly/monthly declaration is idempotent, applies the four/fifteen-day thresholds, and stays unchanged after later meal edits;
+- removing an email from `allowed_users` removes that Player and their public meals while preserving their historical trophy snapshot;
 - notification subscription from each target phone/browser;
 - duplicate Cron calls produce one delivery per subscription and slot.
 

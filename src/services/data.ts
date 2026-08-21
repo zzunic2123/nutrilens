@@ -1,5 +1,19 @@
 import type { User } from '@supabase/supabase-js'
-import type { AnalysisInput, Meal, MealAnalysis, MealDraft, MealItem, Profile } from '../types'
+import type {
+  AnalysisInput,
+  ChampionRecord,
+  LeaderboardEntry,
+  LeaderboardOverview,
+  LeaderboardPeriod,
+  Meal,
+  MealAnalysis,
+  MealDraft,
+  MealItem,
+  PlayerMealTimeline,
+  Profile,
+  PublicMeal,
+  PublicMealCursor,
+} from '../types'
 import { DEFAULT_GOALS, APP_TIMEZONE } from '../lib/constants'
 import { supabase } from '../lib/supabase'
 
@@ -100,6 +114,47 @@ function mapProfile(row: ProfileRow): Profile {
 function requireClient() {
   if (!supabase) throw new Error('Supabase is not configured.')
   return supabase
+}
+
+function mapLeaderboardEntry(entry: LeaderboardEntry): LeaderboardEntry {
+  return {
+    ...entry,
+    rank: Number(entry.rank),
+    protein: Number(entry.protein),
+    calories: Number(entry.calories),
+    loggedDays: Number(entry.loggedDays),
+    mealCount: Number(entry.mealCount),
+    score: entry.score == null ? null : Number(entry.score),
+    eligible: Boolean(entry.eligible),
+    isCurrentUser: Boolean(entry.isCurrentUser),
+  }
+}
+
+function mapChampion(champion: ChampionRecord): ChampionRecord {
+  return {
+    ...champion,
+    score: Number(champion.score),
+    protein: Number(champion.protein),
+    calories: Number(champion.calories),
+    loggedDays: Number(champion.loggedDays),
+  }
+}
+
+function mapPublicMeal(meal: PublicMeal): PublicMeal {
+  return {
+    ...meal,
+    nutrition: {
+      calories: Number(meal.nutrition.calories),
+      protein: Number(meal.nutrition.protein),
+      carbs: Number(meal.nutrition.carbs),
+      fat: Number(meal.nutrition.fat),
+      fiber: meal.nutrition.fiber == null ? null : Number(meal.nutrition.fiber),
+    },
+    items: meal.items.map((item) => ({
+      ...item,
+      estimatedGrams: item.estimatedGrams == null ? null : Number(item.estimatedGrams),
+    })),
+  }
 }
 
 export async function fetchMeals(): Promise<Meal[]> {
@@ -210,6 +265,55 @@ export async function updateProfile(user: User, profile: Profile): Promise<Profi
     .single()
   if (error) throw error
   return mapProfile(data as ProfileRow)
+}
+
+export async function fetchLeaderboard(
+  period: LeaderboardPeriod,
+  historyOffset = 0,
+): Promise<LeaderboardOverview> {
+  const { data, error } = await requireClient().rpc('get_leaderboard', {
+    p_period_type: period,
+    p_history_offset: historyOffset,
+    p_history_limit: 50,
+  })
+  if (error) throw error
+  if (!data || typeof data !== 'object') throw new Error('The leaderboard returned no result.')
+  const overview = data as LeaderboardOverview
+  return {
+    ...overview,
+    period,
+    entries: (overview.entries ?? []).map(mapLeaderboardEntry),
+    latestWeekChampions: (overview.latestWeekChampions ?? []).map(mapChampion),
+    latestMonthChampions: (overview.latestMonthChampions ?? []).map(mapChampion),
+    championHistory: (overview.championHistory ?? []).map(mapChampion),
+    historyHasMore: Boolean(overview.historyHasMore),
+  }
+}
+
+export async function fetchLeaderboardPlayerMeals(
+  userId: string,
+  period: LeaderboardPeriod,
+  periodStart: string | null = null,
+  cursor: PublicMealCursor | null = null,
+): Promise<PlayerMealTimeline> {
+  const { data, error } = await requireClient().rpc('get_leaderboard_player_meals', {
+    p_player_id: userId,
+    p_period_type: period,
+    p_period_start: periodStart,
+    p_before_eaten_at: cursor?.eatenAt ?? null,
+    p_before_id: cursor?.id ?? null,
+    p_limit: 50,
+  })
+  if (error) throw error
+  if (!data || typeof data !== 'object') throw new Error('The Player meal view returned no result.')
+  const timeline = data as PlayerMealTimeline
+  return {
+    ...timeline,
+    period,
+    meals: (timeline.meals ?? []).map(mapPublicMeal),
+    hasMore: Boolean(timeline.hasMore),
+    nextCursor: timeline.nextCursor ?? null,
+  }
 }
 
 export async function analyzeMeal(input: AnalysisInput): Promise<MealAnalysis> {

@@ -1,5 +1,5 @@
 import type { ComponentChildren } from 'preact'
-import { BarChart3, Bell, CalendarDays, Plus, Settings2, Sparkles } from 'lucide-preact'
+import { BarChart3, Bell, CalendarDays, Plus, Settings2, Sparkles, Trophy } from 'lucide-preact'
 import type { AppPage } from '../types'
 import { useApp } from '../contexts/AppContext'
 import { initials } from '../lib/format'
@@ -15,7 +15,7 @@ interface AppShellProps {
 const navItems = [
   { page: 'today' as const, label: 'Today', icon: CalendarDays },
   { page: 'insights' as const, label: 'Insights', icon: BarChart3 },
-  { page: 'settings' as const, label: 'Settings', icon: Settings2 },
+  { page: 'leaderboard' as const, label: 'Leaderboard', icon: Trophy },
 ]
 
 export function AppShell({ activePage, onNavigate, onAdd, children }: AppShellProps) {
@@ -82,11 +82,11 @@ export function AppShell({ activePage, onNavigate, onAdd, children }: AppShellPr
           <span><Plus size={25} /></span>
           <small>Add</small>
         </button>
-        <button class={activePage === 'settings' ? 'active' : ''} onClick={() => onNavigate('settings')}>
-          <Settings2 size={21} />
-          <span>Settings</span>
+        <button class={activePage === 'leaderboard' ? 'active' : ''} onClick={() => onNavigate('leaderboard')}>
+          <Trophy size={21} />
+          <span>Leaderboard</span>
         </button>
-        <button onClick={() => onNavigate('settings')}>
+        <button class={activePage === 'settings' ? 'active' : ''} onClick={() => onNavigate('settings')}>
           <span class="mini-avatar">{initials(profile.displayName)}</span>
           <span>Profile</span>
         </button>

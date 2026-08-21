@@ -90,26 +90,41 @@ Deno.serve(async (request) => {
   }
 
   const { url: supabaseUrl, secretKey } = projectCredentials()
+  if (!supabaseUrl || !secretKey) {
+    return Response.json({ error: 'Supabase service credentials are not configured.' }, {
+      status: 503,
+    })
+  }
+  const supabase = createClient(supabaseUrl, secretKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
+  const { data: championPeriodsDeclared, error: championError } = await supabase
+    .rpc('declare_leaderboard_champions')
+  if (championError) {
+    console.error('Champion declaration failed:', championError.message)
+  }
+  const championDeclarationError = championError?.message ?? null
+
+  const now = new Date()
+  const reminder = dueReminder(now)
+  if (!reminder) {
+    return Response.json({
+      status: 'no_reminder_due',
+      championPeriodsDeclared,
+      championDeclarationError,
+    })
+  }
+
   const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY')
   const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY')
   const vapidSubject = Deno.env.get('VAPID_SUBJECT')
-  if (
-    !supabaseUrl || !secretKey || !vapidPublicKey || !vapidPrivateKey ||
-    !vapidSubject
-  ) {
+  if (!vapidPublicKey || !vapidPrivateKey || !vapidSubject) {
     return Response.json({ error: 'Reminder service is not configured.' }, {
       status: 503,
     })
   }
 
-  const now = new Date()
-  const reminder = dueReminder(now)
-  if (!reminder) return Response.json({ status: 'no_reminder_due' })
-
   webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey)
-  const supabase = createClient(supabaseUrl, secretKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  })
   const { data: subscriptions, error: subscriptionError } = await supabase
     .from('push_subscriptions')
     .select('id,user_id,endpoint,p256dh,auth')
@@ -117,7 +132,12 @@ Deno.serve(async (request) => {
     return Response.json({ error: subscriptionError.message }, { status: 500 })
   }
   if (!subscriptions?.length) {
-    return Response.json({ status: 'no_subscriptions', sent: 0 })
+    return Response.json({
+      status: 'no_subscriptions',
+      championPeriodsDeclared,
+      championDeclarationError,
+      sent: 0,
+    })
   }
 
   const userIds = [
@@ -289,5 +309,13 @@ Deno.serve(async (request) => {
     }
   }
 
-  return Response.json({ status: 'complete', reminder, sent, skipped, failed })
+  return Response.json({
+    status: 'complete',
+    reminder,
+    championPeriodsDeclared,
+    championDeclarationError,
+    sent,
+    skipped,
+    failed,
+  })
 })

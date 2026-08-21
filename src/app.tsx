@@ -10,9 +10,10 @@ import { todayKey } from './lib/date'
 import { LoginPage } from './pages/LoginPage'
 import { TodayPage } from './pages/TodayPage'
 import { InsightsPage } from './pages/InsightsPage'
+import { LeaderboardPage } from './pages/LeaderboardPage'
 import { SettingsPage } from './pages/SettingsPage'
 
-const pages: AppPage[] = ['today', 'insights', 'settings']
+const pages: AppPage[] = ['today', 'insights', 'leaderboard', 'settings']
 
 function pageFromHash(): AppPage {
   const candidate = window.location.hash.replace(/^#\/?/, '').split(/[?&]/)[0]
@@ -96,6 +97,7 @@ export function App() {
           />
         )}
         {page === 'insights' && <InsightsPage />}
+        {page === 'leaderboard' && <LeaderboardPage />}
         {page === 'settings' && <SettingsPage />}
       </AppShell>
       <MealComposer
