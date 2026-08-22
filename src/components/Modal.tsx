@@ -1,4 +1,5 @@
 import type { ComponentChildren } from 'preact'
+import { createPortal } from 'preact/compat'
 import { useEffect, useRef } from 'preact/hooks'
 import { X } from 'lucide-preact'
 
@@ -53,7 +54,7 @@ export function Modal({ open, title, eyebrow, onClose, children, wide = false, c
   }, [onClose, open])
 
   if (!open) return null
-  return (
+  return createPortal(
     <div class="modal-layer">
       <button class="modal-backdrop" aria-label={closeLabel} onClick={onClose} />
       <section ref={dialogRef} class={`modal-card${wide ? ' modal-card--wide' : ''}`} role="dialog" aria-modal="true" aria-labelledby="modal-title">
@@ -68,6 +69,7 @@ export function Modal({ open, title, eyebrow, onClose, children, wide = false, c
         </header>
         <div class="modal-body">{children}</div>
       </section>
-    </div>
+    </div>,
+    document.body,
   )
 }

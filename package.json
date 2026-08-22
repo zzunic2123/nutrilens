@@ -10,6 +10,7 @@
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run",
     "test:watch": "vitest",
+    "mobile:check": "node scripts/mobile-regression-check.mjs",
     "visual:check": "node scripts/visual-check.mjs",
     "check": "npm run typecheck && npm run test && npm run build"
   },
